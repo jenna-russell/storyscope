@@ -1,6 +1,6 @@
 # StoryScope
 
-**StoryScope: Discourse-Level Narrative Features Distinguish AI-Generated from Human-Written Fiction**
+**StoryScope: Investigating idiosyncrasies in AI fiction**
 
 *Jenna Russell, Rishanth Rajendhran, Mohit Iyyer, John Wieting*   
 University of Maryland, Google DeepMind
@@ -13,10 +13,10 @@ Paper: Coming Soon! <!-- TODO: add link when published -->
 
 StoryScope is a pipeline that automatically induces a fine-grained, interpretable feature space of discourse-level narrative features across 10 dimensions (plot, agents, temporal structure, etc.). We apply StoryScope to a parallel corpus of 10,272 writing prompts, each written by a human author and five LLMs, yielding 61,608 stories (~5,000 words each) and 304 extracted features per story.
 
-**Key results:**
+**Results:**
 - Narrative features alone achieve **93.2% macro-F1** for human-vs-AI detection and **68.4% macro-F1** for 6-way authorship attribution
 - A compact set of **30 core features** captures much of this signal
-- AI stories over-explain themes and favor tidy, single-track plots; human stories frame protagonist choices as more morally ambiguous with increased temporal complexity
+- AI-generated stories cluster in a shared region of narrative space, while human-authored stories exhibit greater diversity. 
 
 ## Pipeline
 
