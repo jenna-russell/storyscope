@@ -5,7 +5,7 @@
 *Jenna Russell, Rishanth Rajendhran, Mohit Iyyer, John Wieting*   
 University of Maryland, Google DeepMind
 
-Paper:  <!-- TODO: add link when published -->
+Paper: Coming Soon! <!-- TODO: add link when published -->
 
 ---
 
