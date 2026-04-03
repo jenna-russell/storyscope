@@ -55,7 +55,10 @@ See [`data/README.md`](data/README.md) for detailed documentation.
 | `data/taxonomy.json` | Feature taxonomy (304 features, 10 dimensions) | 279 KB |
 | `data/models/` | Trained XGBoost weights (binary + multiclass) | 22 MB |
 
-**Full story dataset (~770 MB):** The complete train/val/test splits with all AI-generated stories are hosted externally due to file size limits. Download from: <!-- TODO: add Google Drive or HuggingFace link -->
+**Full dataset hosting:** The complete story splits and data artifacts are hosted externally due to file size limits.
+
+- Hugging Face: <https://huggingface.co/datasets/jjrussell10/storyscope>
+- Google Drive: <https://drive.google.com/drive/folders/1o8RC6Crf6vnoL79BDcqON8xsZvGOsxSx?usp=sharing>
 
 **Note:** Human story text is excluded due to copyright (sourced from Books3). The dataset includes book metadata (author, anthology, word count) and all AI-generated stories.
 

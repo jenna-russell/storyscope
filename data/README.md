@@ -10,7 +10,10 @@ This dataset accompanies the StoryScope paper. It contains 10,272 writing prompt
 
 Four parquet files split by dataset partition: `stories_dev.parquet` (included in repo), plus `stories_train.parquet`, `stories_val.parquet`, `stories_test.parquet` (hosted externally due to size).
 
-**Download full dataset:** <!-- TODO: add Google Drive or HuggingFace link -->
+**Download full dataset:**
+
+- Hugging Face: <https://huggingface.co/datasets/jjrussell10/storyscope>
+- Google Drive: <https://drive.google.com/drive/folders/1o8RC6Crf6vnoL79BDcqON8xsZvGOsxSx?usp=sharing>
 
 | Column | Type | Description |
 |--------|------|-------------|
