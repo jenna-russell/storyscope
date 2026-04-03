@@ -24,7 +24,7 @@ StoryScope is a pipeline that automatically induces a fine-grained, interpretabl
   <img src="assets/storyscope.png" alt="StoryScope Pipeline" width="100%">
 </p>
 
-| Stage | Script | Description |
+<!-- | Stage | Script | Description |
 |-------|--------|-------------|
 | 1 | `storyscope.1_story_generation.generate_stories` | Generate AI stories from writing prompts |
 | 2 | `storyscope.2_template_extraction.extract_templates` | Extract NarraBench-structured narrative templates |
@@ -34,7 +34,7 @@ StoryScope is a pipeline that automatically induces a fine-grained, interpretabl
 | 4c | `storyscope.4_feature_discovery.cluster_features` | Deduplicate features via embedding clustering |
 | 5 | `storyscope.5_feature_application.apply_features` | Apply taxonomy to stories (10 calls/story) |
 | 6a | `storyscope.6_classification.train_classifier` | Train XGBoost classifiers (binary + 6-way) |
-| 6b | `storyscope.6_classification.shap_analysis` | Bootstrap SHAP for feature importance & roles |
+| 6b | `storyscope.6_classification.shap_analysis` | Bootstrap SHAP for feature importance & roles | -->
 
 ## Installation
 
@@ -43,6 +43,21 @@ git clone https://github.com/jenna-russell/storyscope.git
 cd storyscope
 pip install -r requirements.txt
 ```
+
+## Data
+
+See [`data/README.md`](data/README.md) for detailed documentation.
+
+| File | Description | Size |
+|------|-------------|------|
+| `data/stories_dev.parquet` | Dev set stories (100 prompts, included in repo) | 7.5 MB |
+| `data/storyscope_features.parquet` | 304 features x 61,575 stories | 7.3 MB |
+| `data/taxonomy.json` | Feature taxonomy (304 features, 10 dimensions) | 279 KB |
+| `data/models/` | Trained XGBoost weights (binary + multiclass) | 22 MB |
+
+**Full story dataset (~770 MB):** The complete train/val/test splits with all AI-generated stories are hosted externally due to file size limits. Download from: <!-- TODO: add Google Drive or HuggingFace link -->
+
+**Note:** Human story text is excluded due to copyright (sourced from Books3). The dataset includes book metadata (author, anthology, word count) and all AI-generated stories.
 
 ## Configuration
 
@@ -109,21 +124,6 @@ python -m storyscope.6_classification.shap_analysis \
     --features data/storyscope_features.parquet --taxonomy data/taxonomy.json \
     --output-dir outputs/shap --task both --bootstrap 50
 ```
-
-## Data
-
-See [`data/README.md`](data/README.md) for detailed documentation.
-
-| File | Description | Size |
-|------|-------------|------|
-| `data/stories_dev.parquet` | Dev set stories (100 prompts, included in repo) | 7.5 MB |
-| `data/storyscope_features.parquet` | 304 features x 61,575 stories | 7.3 MB |
-| `data/taxonomy.json` | Feature taxonomy (304 features, 10 dimensions) | 279 KB |
-| `data/models/` | Trained XGBoost weights (binary + multiclass) | 22 MB |
-
-**Full story dataset (~770 MB):** The complete train/val/test splits with all AI-generated stories are hosted externally due to file size limits. Download from: <!-- TODO: add Google Drive or HuggingFace link -->
-
-**Note:** Human story text is excluded due to copyright (sourced from Books3). The dataset includes book metadata (author, anthology, word count) and all AI-generated stories.
 
 ## Feature Taxonomy
 
