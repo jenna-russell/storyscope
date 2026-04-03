@@ -26,21 +26,21 @@ providers:
 pipeline:
   story_generation:
     provider: openai
-    model: gpt-4o
-    max_tokens: 16384
+    model: gpt-5.4-2026-03-05
+    max_tokens: 128000
   template_extraction:
     provider: openai
-    model: gpt-4o
-    max_tokens: 16384
+    model: gpt-5.4-2026-03-05
+    max_tokens: 128000
   cross_source_comparison:
     provider: openai
-    model: gpt-4o
-    max_tokens: 32768
+    model: gpt-5.4-2026-03-05
+    max_tokens: 128000
   feature_discovery:
     provider: openai
-    model: gpt-4o
-    max_tokens: 32768
+    model: gpt-5.4-2026-03-05
+    max_tokens: 128000
   feature_application:
     provider: vertex
-    model: gemini-2.0-flash
-    max_tokens: 8192
+    model: gemini-3-flash-preview
+    max_tokens: 65536

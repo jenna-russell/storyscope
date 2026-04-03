@@ -2,10 +2,10 @@
 
 **StoryScope: Discourse-Level Narrative Features Distinguish AI-Generated from Human-Written Fiction**
 
-*Jenna Russell, [co-authors]*
+*Jenna Russell, Rishanth Rajendhran, Mohit Iyyer, John Wieting*
 University of Maryland
 
-Paper: [CoLM 2026] <!-- TODO: add link when published -->
+Paper:  <!-- TODO: add link when published -->
 
 ---
 
@@ -23,14 +23,14 @@ StoryScope is a pipeline that automatically induces a fine-grained, interpretabl
 ```
 ┌──────────────────┐     ┌──────────────────┐     ┌──────────────────────┐
 │ 1. Story         │     │ 2. Template      │     │ 3. Cross-Source      │
-│    Generation    │────▶│    Extraction     │────▶│    Comparison        │
-│                  │     │  (NarraBench)     │     │                      │
+│    Generation    │────▶│    Extraction    │────▶│    Comparison        │
+│                  │     │  (NarraBench)    │     │                      │
 └──────────────────┘     └──────────────────┘     └──────────┬───────────┘
                                                              │
 ┌──────────────────┐     ┌──────────────────┐     ┌──────────▼───────────┐
 │ 6. Classification│     │ 5. Feature       │     │ 4. Feature           │
 │    & SHAP        │◀────│    Application   │◀────│    Discovery         │
-│                  │     │                  │     │  + Deduplication      │
+│                  │     │                  │     │                      │
 └──────────────────┘     └──────────────────┘     └──────────────────────┘
 ```
 
@@ -64,10 +64,10 @@ Edit `config/models.yaml` to set your preferred provider per pipeline stage:
 pipeline:
   story_generation:
     provider: openai          # openai, anthropic, vertex, or huggingface
-    model: gpt-4o
+    model: gpt-5.4
   feature_application:
     provider: vertex
-    model: gemini-2.0-flash
+    model: gemini-3-flash
 ```
 
 Set the required API key environment variables:
@@ -154,17 +154,11 @@ The taxonomy covers 304 features across 10 NarraBench dimensions:
 
 Feature types: categorical (124), ordinal (59), scale (45), binary (44), multi-select (32).
 
-## Citation
-
-```bibtex
-@inproceedings{russell2026storyscope,
-  title={StoryScope: Discourse-Level Narrative Features Distinguish AI-Generated from Human-Written Fiction},
-  author={Russell, Jenna},
-  booktitle={Conference on Language Modeling (CoLM)},
-  year={2026}
-}
-```
 
 ## License
 
 See [LICENSE](LICENSE) for details.
+
+## AI Use Disclosure
+
+All code written with the help of Claude Code. 
