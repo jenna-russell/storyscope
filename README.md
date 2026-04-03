@@ -2,8 +2,8 @@
 
 **StoryScope: Discourse-Level Narrative Features Distinguish AI-Generated from Human-Written Fiction**
 
-*Jenna Russell, Rishanth Rajendhran, Mohit Iyyer, John Wieting*
-University of Maryland
+*Jenna Russell, Rishanth Rajendhran, Mohit Iyyer, John Wieting*   
+University of Maryland, Google DeepMind
 
 Paper:  <!-- TODO: add link when published -->
 
