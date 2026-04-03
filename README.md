@@ -1,6 +1,4 @@
-# StoryScope
-
-**StoryScope: Investigating idiosyncrasies in AI fiction**
+# StoryScope: Investigating idiosyncrasies in AI fiction
 
 *Jenna Russell, Rishanth Rajendhran, Mohit Iyyer, John Wieting*   
 University of Maryland, Google DeepMind
