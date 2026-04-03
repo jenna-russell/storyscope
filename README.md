@@ -20,19 +20,9 @@ StoryScope is a pipeline that automatically induces a fine-grained, interpretabl
 
 ## Pipeline
 
-```
-┌──────────────────┐     ┌──────────────────┐     ┌──────────────────────┐
-│ 1. Story         │     │ 2. Template      │     │ 3. Cross-Source      │
-│    Generation    │────▶│    Extraction    │────▶│    Comparison        │
-│                  │     │  (NarraBench)    │     │                      │
-└──────────────────┘     └──────────────────┘     └──────────┬───────────┘
-                                                             │
-┌──────────────────┐     ┌──────────────────┐     ┌──────────▼───────────┐
-│ 6. Classification│     │ 5. Feature       │     │ 4. Feature           │
-│    & SHAP        │◀────│    Application   │◀────│    Discovery         │
-│                  │     │                  │     │                      │
-└──────────────────┘     └──────────────────┘     └──────────────────────┘
-```
+<p align="center">
+  <img src="assets/storyscope.png" alt="StoryScope Pipeline" width="100%">
+</p>
 
 | Stage | Script | Description |
 |-------|--------|-------------|
