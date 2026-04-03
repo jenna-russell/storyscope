@@ -1,0 +1,23 @@
+# Core
+numpy>=1.24
+pandas>=2.0
+pyarrow>=14.0
+pyyaml>=6.0
+scipy>=1.11
+
+# LLM Providers (install the ones you need)
+openai>=1.30
+anthropic>=0.30
+google-genai>=1.0
+
+# Local models (optional, for huggingface provider)
+# transformers>=4.40
+# torch>=2.1
+
+# Classification & Interpretability
+scikit-learn>=1.3
+xgboost>=2.0
+shap>=0.43
+
+# Visualization
+matplotlib>=3.7

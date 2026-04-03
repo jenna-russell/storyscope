@@ -1,0 +1,46 @@
+# StoryScope model configuration
+#
+# Each pipeline stage can use any supported provider. Set the corresponding
+# API key environment variable before running:
+#   - OPENAI_API_KEY      (for OpenAI models)
+#   - ANTHROPIC_API_KEY   (for Claude models)
+#   - GOOGLE_CLOUD_PROJECT + gcloud auth (for Vertex AI / Gemini)
+#   - No key needed for local HuggingFace models
+#
+# To use a local model, set provider: huggingface and model: to a HuggingFace
+# model ID (e.g., meta-llama/Llama-3-8B-Instruct).
+
+providers:
+  openai:
+    api_key_env: OPENAI_API_KEY
+  anthropic:
+    api_key_env: ANTHROPIC_API_KEY
+  vertex:
+    project: null          # set to your GCP project ID
+    location: us-central1
+  huggingface:
+    device: auto           # auto, cuda, cpu
+
+# Default model for each pipeline stage.
+# Override at runtime with --provider and --model flags.
+pipeline:
+  story_generation:
+    provider: openai
+    model: gpt-4o
+    max_tokens: 16384
+  template_extraction:
+    provider: openai
+    model: gpt-4o
+    max_tokens: 16384
+  cross_source_comparison:
+    provider: openai
+    model: gpt-4o
+    max_tokens: 32768
+  feature_discovery:
+    provider: openai
+    model: gpt-4o
+    max_tokens: 32768
+  feature_application:
+    provider: vertex
+    model: gemini-2.0-flash
+    max_tokens: 8192
