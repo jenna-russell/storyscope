@@ -4,6 +4,7 @@
 University of Maryland, Google DeepMind
 
 [![arxiv](https://img.shields.io/badge/arXiv-2604.03136-b31b1b.svg)](https://arxiv.org/abs/2604.03136)
+
 Paper: [StoryScope: Investigating idiosyncrasies in AI fiction](https://arxiv.org/abs/2604.03136)
 
 
