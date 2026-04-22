@@ -1,6 +1,6 @@
 # StoryScope: Investigating idiosyncrasies in AI fiction
 
-*Jenna Russell, Rishanth Rajendhran, Mohit Iyyer, John Wieting*   
+*Jenna Russell, Rishanth Rajendhran, Chau Minh Pham, Mohit Iyyer, John Wieting*   
 University of Maryland, Google DeepMind
 
 [![arxiv](https://img.shields.io/badge/arXiv-2604.03136-b31b1b.svg)](https://arxiv.org/abs/2604.03136)
