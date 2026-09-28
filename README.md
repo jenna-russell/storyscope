@@ -52,7 +52,7 @@ See [`data/README.md`](data/README.md) for detailed documentation.
 | `data/stories_dev.parquet` | Dev set stories (100 prompts, included in repo) | 7.5 MB |
 | `data/storyscope_features.parquet` | 304 features x 61,575 stories | 7.3 MB |
 | `data/taxonomy.json` | Feature taxonomy (304 features, 10 dimensions) | 279 KB |
-| `data/models/` | Trained XGBoost weights (binary + multiclass) | 22 MB |
+| `data/models/` | Trained XGBoost weights (binary + multiclass; narrative + full) | 60 MB |
 
 **Full dataset hosting:** The complete story splits and data artifacts are hosted externally due to file size limits.
 
@@ -119,7 +119,7 @@ python -m storyscope.5_feature_application.apply_features \
 # Train classifiers
 python -m storyscope.6_classification.train_classifier \
     --features data/storyscope_features.parquet --taxonomy data/taxonomy.json \
-    --output-dir outputs/classification --task both
+    --output-dir outputs/classification --task both --feature-set narrative
 
 # SHAP analysis
 python -m storyscope.6_classification.shap_analysis \

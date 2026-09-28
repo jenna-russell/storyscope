@@ -12,7 +12,8 @@ Usage:
         --taxonomy data/taxonomy.json \
         --output-dir outputs/shap \
         --task both \
-        --bootstrap 50
+        --bootstrap 50 \
+        --feature-set narrative
 """
 
 from __future__ import annotations
@@ -70,6 +71,7 @@ def run_bootstrap_shap(
     max_depth: int = 8,
     human_weight: float = 5.0,
     n_classes: int = 2,
+    human_idx: int = 1,
 ) -> Tuple[np.ndarray, List[np.ndarray]]:
     """
     Run bootstrap SHAP analysis.
@@ -89,14 +91,13 @@ def run_bootstrap_shap(
         X_boot, y_boot = X[boot_mask], y[boot_mask]
 
         if task == "binary":
-            sample_weights = np.where(y_boot == 1, human_weight, 1.0)
+            sample_weights = np.where(y_boot == human_idx, human_weight, 1.0)
             clf = XGBClassifier(
                 n_estimators=n_estimators, max_depth=max_depth,
                 use_label_encoder=False, eval_metric="logloss",
                 random_state=b,
             )
         else:
-            human_idx = 0  # assumes human is first class
             sample_weights = np.where(y_boot == human_idx, human_weight, 1.0)
             clf = XGBClassifier(
                 n_estimators=n_estimators, max_depth=max_depth,
@@ -110,8 +111,11 @@ def run_bootstrap_shap(
         shap_values = explainer.shap_values(X_boot)
 
         if isinstance(shap_values, list):
-            # Multiclass: average absolute SHAP across classes
+            # Multiclass (shap < 0.45): one array per class; average |SHAP| across classes
             importance = np.mean([np.abs(sv).mean(axis=0) for sv in shap_values], axis=0)
+        elif shap_values.ndim == 3:
+            # Multiclass (shap >= 0.45): (n_samples, n_features, n_classes)
+            importance = np.abs(shap_values).mean(axis=(0, 2))
         else:
             importance = np.abs(shap_values).mean(axis=0)
 
@@ -204,13 +208,16 @@ def main():
     parser.add_argument("--output-dir", required=True, help="Output directory")
     parser.add_argument("--task", choices=["binary", "multiclass", "both"], default="both")
     parser.add_argument("--bootstrap", type=int, default=50, help="Number of bootstrap iterations")
+    parser.add_argument("--feature-set", choices=["full", "narrative"], default="full",
+                        help="full: all features; narrative: exclude the style dimension "
+                             "(default: full)")
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     taxonomy = load_taxonomy(args.taxonomy)
-    feature_ids = get_taxonomy_feature_ids(taxonomy)
+    feature_ids = get_taxonomy_feature_ids(taxonomy, args.feature_set)
     feature_type_map = build_feature_type_map(taxonomy)
 
     if args.features.endswith(".parquet"):
@@ -238,15 +245,18 @@ def main():
         if task == "binary":
             y = make_binary_target(df)
             n_classes = 2
+            human_idx = 1
         else:
-            y, _ = make_multiclass_target(df, authors)
+            y, label_map = make_multiclass_target(df, authors)
             n_classes = len(authors)
+            human_idx = label_map["human"]
 
         mean_imp, all_imp = run_bootstrap_shap(
             X, y, groups, col_names,
             n_bootstrap=args.bootstrap,
             task=task,
             n_classes=n_classes,
+            human_idx=human_idx,
         )
 
         stability = compute_stability(all_imp)

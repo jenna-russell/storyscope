@@ -263,6 +263,29 @@ Return a single JSON object with feature IDs as keys.
 # Main extraction logic
 # ---------------------------------------------------------------------------
 
+def generate_dimension_json(provider, prompt: str, dim_key: str, attempts: int = 3) -> dict:
+    """
+    Request a dimension's features as a JSON object, retrying when the model
+    returns malformed JSON or a non-object (e.g. a top-level list, which JSON
+    mode occasionally produces and which would otherwise drop the dimension).
+    """
+    problem = None
+    for attempt in range(1, attempts + 1):
+        try:
+            result = provider.generate_json(prompt)
+        except json.JSONDecodeError as e:
+            problem = f"malformed JSON ({e})"
+        else:
+            if isinstance(result, list) and len(result) == 1 and isinstance(result[0], dict):
+                result = result[0]
+            if isinstance(result, dict):
+                return result
+            problem = f"expected a JSON object, got {type(result).__name__}"
+        if attempt < attempts:
+            logger.warning(f"  Dimension {dim_key}: {problem}; retrying ({attempt}/{attempts})")
+    raise ValueError(f"{problem} after {attempts} attempts")
+
+
 def extract_story_features(
     provider,
     taxonomy: Taxonomy,
@@ -275,7 +298,7 @@ def extract_story_features(
 
     def process_dimension(dim: Dimension):
         prompt = build_dimension_prompt(dim, story_text)
-        result = provider.generate_json(prompt)
+        result = generate_dimension_json(provider, prompt, dim.key)
         return dim.key, result
 
     with ThreadPoolExecutor(max_workers=dim_workers) as executor:

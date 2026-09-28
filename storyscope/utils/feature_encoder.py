@@ -12,7 +12,6 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
 
 
 def load_taxonomy(path: str) -> dict:
@@ -40,10 +39,26 @@ def build_feature_type_map(taxonomy: dict) -> Dict[str, dict]:
     return fmap
 
 
-def get_taxonomy_feature_ids(taxonomy: dict) -> List[str]:
-    """Extract ordered list of feature IDs from taxonomy."""
+# Dimensions dropped from each feature set. "narrative" excludes surface style.
+FEATURE_SETS = {
+    "full": (),
+    "narrative": ("style",),
+}
+
+# Encoded value for a feature whose condition was not met ("n/a"). Missing or
+# unrecognized values are encoded as NaN, which XGBoost treats as missing.
+NA_CODE = -1
+
+
+def get_taxonomy_feature_ids(taxonomy: dict, feature_set: str = "full") -> List[str]:
+    """Extract ordered list of feature IDs from taxonomy, restricted to a feature set."""
+    if feature_set not in FEATURE_SETS:
+        raise ValueError(f"Unknown feature_set {feature_set!r}; use one of {list(FEATURE_SETS)}")
+    excluded = FEATURE_SETS[feature_set]
     ids = []
-    for dim_data in taxonomy.values():
+    for dim_key, dim_data in taxonomy.items():
+        if dim_key in excluded:
+            continue
         for asp_data in dim_data.get("aspects", {}).values():
             for feat in asp_data.get("features", []):
                 ids.append(feat["id"])
@@ -178,11 +193,22 @@ def encode_features(
     """
     Encode feature columns into a numeric matrix.
 
+    The encoding depends only on the taxonomy, never on which values happen to
+    appear in `df`, so the same story always encodes the same way and models
+    trained on one dataset can be applied to another. Raw values are mapped
+    onto the taxonomy's value list (via `_best_match`) before encoding:
+
+    - single-valued features: index into the taxonomy's `values` list (so
+      ordinal features keep their order); NA_CODE for "n/a"; NaN if missing
+      or unrecognized.
+    - multi_select features (multi_hot modes): one 0/1 column per taxonomy
+      value; NaN across the feature's columns if missing.
+
     Args:
         mode: one of "first_value", "multi_hot", "multi_hot_count"
 
     Returns:
-        X: numpy array (n_samples, n_encoded_cols)
+        X: float32 numpy array (n_samples, n_encoded_cols)
         col_names: list of column names for X
     """
     encoded_cols = []
@@ -191,46 +217,71 @@ def encode_features(
     for fid in feature_ids:
         finfo = feature_type_map.get(fid, {})
         ftype = finfo.get("type", "categorical")
-        taxonomy_values = finfo.get("values", [])
-
-        col = df[fid].copy()
+        allowed = [str(v) for v in finfo.get("values", [])]
+        value_sets = df[fid].apply(_value_set_fn(allowed, split_pipes=ftype == "multi_select"))
 
         if ftype == "multi_select" and mode in ("multi_hot", "multi_hot_count"):
-            for val in taxonomy_values:
-                binary_col = col.apply(
-                    lambda x, v=val: (
-                        1 if isinstance(x, list) and v in x
-                        else 1 if isinstance(x, str) and v in x.split("|")
-                        else 0
-                    )
-                )
-                encoded_cols.append(binary_col.values)
+            # "n/a" selects nothing, so it encodes as all zeros
+            value_sets = value_sets.apply(lambda s: frozenset() if s == "n/a" else s)
+            for val in allowed:
+                encoded_cols.append(value_sets.apply(
+                    lambda s, v=val: np.nan if s is None else float(v in s)
+                ).values)
                 col_names.append(f"{fid}__{val}")
 
             if mode == "multi_hot_count":
-                count_col = col.apply(
-                    lambda x: len(x) if isinstance(x, list)
-                    else len(x.split("|")) if isinstance(x, str) and x
-                    else 0
-                )
-                encoded_cols.append(count_col.values)
+                encoded_cols.append(value_sets.apply(
+                    lambda s: np.nan if s is None else float(len(s))
+                ).values)
                 col_names.append(f"{fid}__count")
         else:
-            def _to_str(x):
-                if isinstance(x, list):
-                    return str(x[0]) if x else "__MISSING__"
-                if x is None or (isinstance(x, float) and np.isnan(x)):
-                    return "__MISSING__"
-                return str(x)
+            index = {v: i for i, v in enumerate(allowed)}
 
-            str_col = col.apply(_to_str)
-            le = LabelEncoder()
-            le.fit(sorted(str_col.unique()))
-            encoded_cols.append(le.transform(str_col))
+            def _code(s):
+                if s is None:
+                    return np.nan
+                if s == "n/a":
+                    return NA_CODE
+                # multi_select in "first_value" mode: take the first value in taxonomy order
+                first = next((v for v in allowed if v in s), None)
+                return np.nan if first is None else index[first]
+
+            encoded_cols.append(value_sets.apply(_code).values)
             col_names.append(fid)
 
-    X = np.column_stack(encoded_cols)
+    X = np.column_stack(encoded_cols).astype(np.float32)
     return X, col_names
+
+
+def _value_set_fn(allowed: List[str], split_pipes: bool):
+    """
+    Build a function mapping a raw feature cell to its set of canonical taxonomy
+    values: None if missing, "n/a" if the feature's condition was not met.
+    """
+    cache: Dict[str, Optional[str]] = {}
+
+    def canonical(raw: str) -> Optional[str]:
+        if raw not in cache:
+            match = raw if raw in allowed else _best_match(raw, allowed)
+            cache[raw] = match if match in allowed else None
+        return cache[raw]
+
+    def to_set(x):
+        if isinstance(x, (list, tuple, np.ndarray)):
+            parts = [str(v) for v in x]
+        elif x is None or (isinstance(x, float) and np.isnan(x)):
+            return None
+        else:
+            s = str(x)
+            parts = s.split("|") if split_pipes else [s]
+        if parts == ["n/a"]:
+            return "n/a"
+        # skip "" (nothing selected) and stray "n/a" parts: _best_match would
+        # otherwise fuzzy-match them onto a real value
+        parts = [p for p in parts if p and p != "n/a"]
+        return frozenset(c for c in map(canonical, parts) if c is not None)
+
+    return to_set
 
 
 def filter_matched_prompts(df: pd.DataFrame, authors: List[str]) -> pd.DataFrame:
