@@ -85,20 +85,35 @@ The 304-feature taxonomy organized by NarraBench dimension and aspect.
 
 ### Model Weights (`models/`)
 
-Trained XGBoost classifiers:
+Trained XGBoost classifiers, produced by `train_classifier.py` from `taxonomy.json` and `storyscope_features.parquet`:
 
-| File | Task | Features |
-|------|------|----------|
-| `binary_narrative.json` | Human vs AI | Narrative only (no style) |
-| `binary_full.json` | Human vs AI | All 304 features |
-| `multiclass_narrative.json` | 6-way attribution | Narrative only |
-| `multiclass_full.json` | 6-way attribution | All 304 features |
+| File | Task | `--feature-set` | Features | Encoded columns |
+|------|------|-----------------|----------|-----------------|
+| `binary_narrative.json` | Human vs AI | `narrative` (no style) | 265 | 410 |
+| `binary_full.json` | Human vs AI | `full` | 304 | 462 |
+| `multiclass_narrative.json` | 6-way attribution | `narrative` (no style) | 265 | 410 |
+| `multiclass_full.json` | 6-way attribution | `full` | 304 | 462 |
 
-Load with:
+Binary models predict `1` = human. Multiclass models use alphabetical class order: `claude`=0, `deepseek`=1, `gemini`=2, `gpt`=3, `human`=4, `kimi`=5.
+
+Encode features with the same taxonomy and feature set as the model, then predict on a DataFrame. The encoded column names are stored in each model, so a mismatched encoding raises an error instead of producing silent garbage:
 ```python
+import pandas as pd
 from xgboost import XGBClassifier
+from storyscope.utils.feature_encoder import (
+    load_taxonomy, build_feature_type_map, get_taxonomy_feature_ids, encode_features)
+
+taxonomy = load_taxonomy("data/taxonomy.json")
+feature_ids = get_taxonomy_feature_ids(taxonomy, feature_set="narrative")  # "full" for *_full.json
+
+# One row per story with a column per feature ID, e.g. storyscope_features.parquet
+# or load_features_matrix() on stage 5 output
+df = pd.read_parquet("data/storyscope_features.parquet")
+X, cols = encode_features(df, feature_ids, build_feature_type_map(taxonomy), mode="multi_hot")
+
 clf = XGBClassifier()
 clf.load_model("data/models/binary_narrative.json")
+p_human = clf.predict_proba(pd.DataFrame(X, columns=cols))[:, 1]
 ```
 
 ## Copyright Notice

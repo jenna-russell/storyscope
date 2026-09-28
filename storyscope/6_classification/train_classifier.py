@@ -4,13 +4,16 @@ Stage 6a: Train XGBoost classifiers on narrative features.
 
 Trains binary (human vs AI) and/or 6-way (per-source) classifiers using
 encoded feature vectors with prompt-level grouping to prevent train/test leakage.
+Encoded column names are embedded in each saved model, so predicting on a
+DataFrame with different columns raises instead of silently misaligning.
 
 Usage:
     python -m storyscope.6_classification.train_classifier \
         --features data/storyscope_features.parquet \
         --taxonomy data/taxonomy.json \
         --output-dir outputs/classification \
-        --task both
+        --task both \
+        --feature-set narrative
 """
 
 from __future__ import annotations
@@ -52,10 +55,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def load_data(features_path: str, taxonomy_path: str, split_col: str = "split"):
-    """Load features and taxonomy, split into train/test."""
+def load_data(features_path: str, taxonomy_path: str, feature_set: str = "full"):
+    """Load features and taxonomy, keeping only matched prompts."""
     taxonomy = load_taxonomy(taxonomy_path)
-    feature_ids = get_taxonomy_feature_ids(taxonomy)
+    feature_ids = get_taxonomy_feature_ids(taxonomy, feature_set)
     feature_type_map = build_feature_type_map(taxonomy)
 
     if features_path.endswith(".parquet"):
@@ -77,6 +80,7 @@ def train_binary(
     feature_ids: List[str],
     feature_type_map: Dict,
     output_dir: Path,
+    feature_set: str = "full",
     n_estimators: int = 420,
     max_depth: int = 8,
     reg_lambda: float = 2.0,
@@ -86,6 +90,8 @@ def train_binary(
     logger.info("=== Binary Classification (Human vs AI) ===")
 
     X, col_names = encode_features(df, feature_ids, feature_type_map, mode="multi_hot")
+    # DataFrame input makes XGBoost store the column names in the saved model
+    X = pd.DataFrame(X, columns=col_names)
     y = make_binary_target(df)
     groups = build_groups(df)
 
@@ -93,7 +99,7 @@ def train_binary(
     gkf = GroupKFold(n_splits=5)
     train_idx, test_idx = next(gkf.split(X, y, groups))
 
-    X_train, X_test = X[train_idx], X[test_idx]
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
     y_train, y_test = y[train_idx], y[test_idx]
 
     # Sample weights: upweight human class
@@ -129,6 +135,7 @@ def train_binary(
     # Save metadata
     meta = {
         "task": "binary",
+        "feature_set": feature_set,
         "n_train": len(y_train),
         "n_test": len(y_test),
         "n_features_encoded": X.shape[1],
@@ -141,6 +148,7 @@ def train_binary(
             "reg_lambda": reg_lambda,
             "human_weight": human_weight,
         },
+        "feature_names": col_names,
     }
     (binary_dir / "metadata.json").write_text(json.dumps(meta, indent=2))
     logger.info(f"  Saved to {binary_dir}")
@@ -154,6 +162,7 @@ def train_multiclass(
     feature_type_map: Dict,
     authors: List[str],
     output_dir: Path,
+    feature_set: str = "full",
     n_estimators: int = 500,
     max_depth: int = 7,
     reg_lambda: float = 1.0,
@@ -163,13 +172,15 @@ def train_multiclass(
     logger.info("=== Multiclass Classification (6-way) ===")
 
     X, col_names = encode_features(df, feature_ids, feature_type_map, mode="multi_hot")
+    # DataFrame input makes XGBoost store the column names in the saved model
+    X = pd.DataFrame(X, columns=col_names)
     y, label_map = make_multiclass_target(df, authors)
     groups = build_groups(df)
 
     gkf = GroupKFold(n_splits=5)
     train_idx, test_idx = next(gkf.split(X, y, groups))
 
-    X_train, X_test = X[train_idx], X[test_idx]
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
     y_train, y_test = y[train_idx], y[test_idx]
 
     # Sample weights
@@ -203,6 +214,7 @@ def train_multiclass(
 
     meta = {
         "task": "multiclass",
+        "feature_set": feature_set,
         "n_train": len(y_train),
         "n_test": len(y_test),
         "n_features_encoded": X.shape[1],
@@ -216,6 +228,7 @@ def train_multiclass(
             "reg_lambda": reg_lambda,
             "human_weight": human_weight,
         },
+        "feature_names": col_names,
     }
     (mc_dir / "metadata.json").write_text(json.dumps(meta, indent=2))
     logger.info(f"  Saved to {mc_dir}")
@@ -230,18 +243,23 @@ def main():
     parser.add_argument("--output-dir", required=True, help="Output directory")
     parser.add_argument("--task", choices=["binary", "multiclass", "both"], default="both",
                         help="Classification task (default: both)")
+    parser.add_argument("--feature-set", choices=["full", "narrative"], default="full",
+                        help="full: all features; narrative: exclude the style dimension "
+                             "(default: full)")
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    df, feature_ids, feature_type_map, authors = load_data(args.features, args.taxonomy)
+    df, feature_ids, feature_type_map, authors = load_data(
+        args.features, args.taxonomy, args.feature_set)
+    logger.info(f"Feature set '{args.feature_set}': {len(feature_ids)} features")
 
     if args.task in ("binary", "both"):
-        train_binary(df, feature_ids, feature_type_map, output_dir)
+        train_binary(df, feature_ids, feature_type_map, output_dir, args.feature_set)
 
     if args.task in ("multiclass", "both"):
-        train_multiclass(df, feature_ids, feature_type_map, authors, output_dir)
+        train_multiclass(df, feature_ids, feature_type_map, authors, output_dir, args.feature_set)
 
 
 if __name__ == "__main__":
